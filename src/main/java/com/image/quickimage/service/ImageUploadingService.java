@@ -5,17 +5,16 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
-import java.util.function.Supplier;
+
 
 @Service
-public class FileUploadingService {
+public class ImageUploadingService {
+
     public String uploadImage(FileUploadRequest request) throws IOException {
 
         if (request.image().isEmpty()) {
@@ -34,6 +33,8 @@ public class FileUploadingService {
 
         return "Image uploaded successfully: " + fileName;
     }
+
+
     public Resource getImage(String name) throws Exception {
 
         Path path = Paths.get("uploads").resolve(name);
@@ -44,4 +45,5 @@ public class FileUploadingService {
 
         return new UrlResource(path.toUri());
     }
+
 }

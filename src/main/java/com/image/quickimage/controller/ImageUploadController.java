@@ -1,7 +1,8 @@
 package com.image.quickimage.controller;
 
 import com.image.quickimage.Request.FileUploadRequest;
-import com.image.quickimage.service.FileUploadingService;
+import com.image.quickimage.service.ImageProcessingService;
+import com.image.quickimage.service.ImageUploadingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -16,11 +17,13 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class ImageUploadController {
     @Autowired
-    private FileUploadingService  service;
+    private ImageUploadingService uploadingService;
+    @Autowired
+    private ImageProcessingService processingService;
     @PostMapping("/upload")
     public  String uploadImage(@ModelAttribute FileUploadRequest request ){
         try {
-             return service.uploadImage(request);
+             return uploadingService.uploadImage(request);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -28,7 +31,8 @@ public class ImageUploadController {
 
     @GetMapping("{name}")
     public ResponseEntity<Resource> getImage(@PathVariable String name ) throws Exception {
-         Resource image =  service.getImage(name);
+//         Resource image =  uploadingService.getImage(name);
+        Resource image = processingService.processImage(name);
         return ResponseEntity.ok()
                 .contentType(MediaType.IMAGE_PNG)
                 .body(image);
