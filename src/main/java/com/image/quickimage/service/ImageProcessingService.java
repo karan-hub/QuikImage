@@ -1,5 +1,6 @@
 package com.image.quickimage.service;
 
+import lombok.AllArgsConstructor;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -15,85 +16,27 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Service
+@AllArgsConstructor
 public class ImageProcessingService {
 
-    public Resource processImage(String name) throws IOException {
-        // 1. Use clean paths (removed the leading space bug!)
-        Path originalPath = Paths.get("D:/quickimage/uploads", name);
-
-        BufferedImage original = ImageIO.read(originalPath.toFile());
-        if (original == null) {
-            throw new IOException("Could not read image: " + originalPath);
-        }
-
-        // 2. Create target image
-        BufferedImage resized = new BufferedImage(
-                200,
-                200,
-                BufferedImage.TYPE_4BYTE_ABGR
-        );
-        Graphics2D g = resized.createGraphics();
-
-        try {
-            // 3. Fix transparency: Fill background with white
-            g.setColor(Color.WHITE);
-            g.fillRect(0, 0, 200, 200);
-
-            // 4. High-quality scaling
-            g.setRenderingHint(
-                    RenderingHints.KEY_INTERPOLATION,
-                    RenderingHints.VALUE_INTERPOLATION_BICUBIC
-            );
-            g.drawImage(original, 0, 0, 200, 200, null);
-        } finally {
-            g.dispose(); // Always dispose graphics resources
-        }
-
-        // 5. Save and Return
-        Path outputDir = Paths.get("processed");
-        Files.createDirectories(outputDir);
-
-        String outputName = name.replace(".png", ".jpg");
-        Path outputPath = outputDir.resolve(outputName);
-
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
-        boolean written = ImageIO.write(resized, "png", outputStream );
-
-        if (!written) {
-            throw new IOException("Failed to encode image as JPG");
-        }
-
-        return new FileSystemResource(outputPath);
-    }
+    private ImageNamingService namingService;
+    private  StorageService storageService;
 
     public byte[] getProcessedImage(String filename, Integer targetW, Integer targetH) throws IOException {
         filename = filename.toLowerCase();
+//        D:/quickimage/cached
+//        D:/quickimage/originals
+        String  path = "D:/quickimage/originals";
 
-        Path sourcePath = Paths.get("D:/quickimage/originals").resolve(filename);
+        Path sourcePath = storageService.getTargetPath(filename, path)
         if (!Files.exists(sourcePath))
             throw new FileNotFoundException("File not found");
 
+        String cacheName = namingService.ConstructName(filename, targetW, targetH);
 
-        int dotIndex = filename.lastIndexOf(".");
-        String baseName;
-        String extension;
+        Path targetPath = storageService.getTargetPath(cacheName);
 
-        if (dotIndex >0){
-            baseName = filename.substring( 0,dotIndex);
-            extension = filename.substring(dotIndex);
-        }else {
-            baseName = filename;
-            extension = ".jpg";
-        }
-        String cacheName = baseName + "_w" + targetW + "_h" + targetH + extension;
-
-        Path path = Paths.get("D:/quickimage/cached");
-        Files.createDirectories(path);
-        Path targetPath = path.resolve(cacheName);
-
-         if (Files.exists(targetPath)){
-             System.out.println("Cache Hit! ");
+        if (storageService.exists(cacheName , targetPath)){
               return  Files.readAllBytes(targetPath);
          }
 
