@@ -3,3 +3,15 @@ The Object-Fit Concept :
 Divide target width by original width.
 Divide target height by original height.
 Pick the smallest number and multiply it by the original width and height
+
+// time tp radis
+If we use Redis, we have a 3-Layer Search:
+
+If i  100,000 images, im  using 1.2GB of RAM.
+Layer 1: Is it in Redis RAM? (Super Fast)
+Layer 2: If not, is it on the D: Drive Disk? (Fast)
+Layer 3: If not, resize it now! (Slow)
+
+Hot-Warm-Cold" Strategy
+
+In a professional setup, you wouldn't put every image in Redis. You would implement a TTL (Time To Live)

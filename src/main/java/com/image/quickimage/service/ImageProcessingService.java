@@ -68,9 +68,35 @@ public class ImageProcessingService {
     }
 
     public byte[] getProcessedImage(String filename, Integer targetW, Integer targetH) throws IOException {
+        filename = filename.toLowerCase();
 
         Path sourcePath = Paths.get("D:/quickimage/originals").resolve(filename);
-        if (!Files.exists(sourcePath)) throw new FileNotFoundException("File not found");
+        if (!Files.exists(sourcePath))
+            throw new FileNotFoundException("File not found");
+
+
+        int dotIndex = filename.lastIndexOf(".");
+        String baseName;
+        String extension;
+
+        if (dotIndex >0){
+            baseName = filename.substring( 0,dotIndex);
+            extension = filename.substring(dotIndex);
+        }else {
+            baseName = filename;
+            extension = ".jpg";
+        }
+        String cacheName = baseName + "_w" + targetW + "_h" + targetH + extension;
+
+        Path path = Paths.get("D:/quickimage/cached");
+        Files.createDirectories(path);
+        Path targetPath = path.resolve(cacheName);
+
+         if (Files.exists(targetPath)){
+             System.out.println("Cache Hit! ");
+              return  Files.readAllBytes(targetPath);
+         }
+
 
         BufferedImage original = ImageIO.read(sourcePath.toFile());
 
@@ -81,6 +107,8 @@ public class ImageProcessingService {
 
         int actualW = (int) (original.getWidth() * ratio);
         int actualH = (int) (original.getHeight() * ratio);
+
+
 
         BufferedImage output = new BufferedImage(
                 actualW,
@@ -103,6 +131,10 @@ public class ImageProcessingService {
         }
         ByteArrayOutputStream  outputStream = new ByteArrayOutputStream();
         ImageIO.write(output ,"JPG",outputStream);
-        return  outputStream.toByteArray();
+
+        byte[] finalBytes = outputStream.toByteArray();
+        Files.write(targetPath, finalBytes);
+
+        return finalBytes ;
     }
 }
