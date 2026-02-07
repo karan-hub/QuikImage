@@ -1,0 +1,5 @@
+The Object-Fit Concept :
+
+Divide target width by original width.
+Divide target height by original height.
+Pick the smallest number and multiply it by the original width and height

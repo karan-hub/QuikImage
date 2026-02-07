@@ -4,12 +4,17 @@ import com.image.quickimage.Request.FileUploadRequest;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 
 
 @Service
@@ -17,22 +22,36 @@ public class ImageUploadingService {
 
     public String uploadImage(FileUploadRequest request) throws IOException {
 
-        if (request.image().isEmpty()) {
-            throw new RuntimeException("File is empty");
+        MultipartFile image = request.image();
+
+        if (image.isEmpty()) {
+            throw new IllegalArgumentException("File is empty");
         }
 
-        if (!Objects.requireNonNull(request.image().getContentType()).startsWith("image/")) {
-            throw new RuntimeException("Only image files are allowed");
+        String contentType = image.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new IllegalArgumentException("Only image files are allowed");
         }
 
-        String uploadDir= "uploads/";
-        String fileName =  System.currentTimeMillis() + "_"+request.image().getOriginalFilename();
-        Path filePath = Paths.get(uploadDir,fileName);
-        Files.createDirectories(filePath.getParent());
-        Files.write(filePath, request.image().getBytes());
+        String originalName = image.getOriginalFilename();
+
+        String extension = originalName != null && originalName.contains(".")
+                ? originalName.substring(originalName.lastIndexOf("."))
+                : ".jpg";
+
+         String fileName = UUID.randomUUID() + extension;
+
+        Path uploadDir = Paths.get("D:/quickimage/originals");
+        Files.createDirectories(uploadDir);
+        Path targetPath = uploadDir.resolve(fileName);
+
+         try (InputStream in = image.getInputStream()) {
+            Files.copy(in, targetPath, StandardCopyOption.REPLACE_EXISTING);
+        }
 
         return "Image uploaded successfully: " + fileName;
     }
+
 
 
     public Resource getImage(String name) throws Exception {
