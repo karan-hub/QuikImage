@@ -46,7 +46,7 @@ public class ImageProcessingService {
         this.storageProperties = storageProperties;
     }
 
-    public byte[] getProcessedImage(String filename, Integer requestedW, Integer requestedH) throws IOException, ImageNotFoundException, InvalidDimensionException {
+    public byte[] getProcessedImage(String filename, Integer requestedW, Integer requestedH) throws  Exception {
 
           String originalLocation = storageProperties.getOriginalLocation() ;
           String cacheLocation= storageProperties.getCacheLocation();

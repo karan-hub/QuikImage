@@ -6,16 +6,27 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import java.io.IOException;
+
 @ControllerAdvice
 public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidDimensionException.class)
-    public ResponseEntity<String> handleInvalidDimensionException(Exception e){
+    public ResponseEntity<String> handleInvalidDimensionException(InvalidDimensionException e){
         return  new ResponseEntity<>(e.getMessage() , HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(ImageNotFoundException.class)
-    public ResponseEntity<String> handleImageNotFoundException(Exception e){
+    public ResponseEntity<String> handleImageNotFoundException(ImageNotFoundException e){
         return  new ResponseEntity<>(e.getMessage() , HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(UnsupportedMediaException.class)
+    public ResponseEntity<String> handleUnsupportedMediaException(UnsupportedMediaException e){
+        return  new  ResponseEntity<>(e.getMessage() , HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+    }
+    @ExceptionHandler(IOException.class)
+    public ResponseEntity<String> handleIO(IOException e) {
+         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing file");
     }
 }
 

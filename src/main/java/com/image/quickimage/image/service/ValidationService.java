@@ -12,7 +12,7 @@ public class ValidationService {
     private static final int ORIGINAL_WIDTH = 500;
     private static final int ORIGINAL_HEIGHT= 500;
 
-     public  SafeDimension  getSafeDimensions(Integer requestedW, Integer requestedH) throws InvalidDimensionException {
+     public  SafeDimension  getSafeDimensions(Integer requestedW, Integer requestedH)  {
 
          int w = (requestedW == null || requestedW <= 0) ? ORIGINAL_WIDTH : requestedW;
          int h = (requestedH == null || requestedH <= 0) ? ORIGINAL_HEIGHT : requestedH;
