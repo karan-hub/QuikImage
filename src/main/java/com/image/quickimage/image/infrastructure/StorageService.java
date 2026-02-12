@@ -1,9 +1,8 @@
-package com.image.quickimage.service;
+package com.image.quickimage.image.infrastructure;
 
 import org.springframework.stereotype.Service;
 
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -20,6 +19,7 @@ public class StorageService {
     }
 
 
+// Path Handling
     public  Path getTargetPath(String filename , String location) throws FileNotFoundException {
         try{
             Path path = Paths.get(location);

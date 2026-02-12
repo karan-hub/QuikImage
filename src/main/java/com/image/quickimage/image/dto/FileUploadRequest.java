@@ -1,4 +1,4 @@
-package com.image.quickimage.Request;
+package com.image.quickimage.image.dto;
 
 import org.springframework.web.multipart.MultipartFile;
 

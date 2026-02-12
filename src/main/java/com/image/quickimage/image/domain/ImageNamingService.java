@@ -1,15 +1,13 @@
-package com.image.quickimage.service;
+package com.image.quickimage.image.domain;
 
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 @Service
 public class ImageNamingService {
-    public  String ConstructName(String imageName ,  int targetW , int  targetH ) throws IOException {
+//    Naming logic
+    public  String ConstructName(String imageName,  int targetW , int  targetH ) throws IOException {
         int dotIndex = imageName.lastIndexOf(".");
         String baseName;
         String extension;

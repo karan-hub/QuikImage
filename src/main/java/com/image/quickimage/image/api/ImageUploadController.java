@@ -1,15 +1,13 @@
-package com.image.quickimage.controller;
+package com.image.quickimage.image.api;
 
-import com.image.quickimage.Request.FileUploadRequest;
-import com.image.quickimage.service.ImageProcessingService;
-import com.image.quickimage.service.ImageUploadingService;
+import com.image.quickimage.image.dto.FileUploadRequest;
+import com.image.quickimage.image.service.ImageProcessingService;
+import com.image.quickimage.image.service.ImageUploadingService;
 import lombok.AllArgsConstructor;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.core.io.Resource;
+
 import java.io.IOException;
 
 
