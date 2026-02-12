@@ -2,9 +2,13 @@ package com.image.quickimage.image.service;
 
 import com.image.quickimage.image.domain.ImageNamingService;
 import com.image.quickimage.image.domain.ImageProcessor;
+import com.image.quickimage.image.domain.SafeDimension;
+import com.image.quickimage.image.domain.StorageProperties;
+import com.image.quickimage.image.exception.ImageNotFoundException;
 import com.image.quickimage.image.infrastructure.CacheService;
 import com.image.quickimage.image.infrastructure.StorageService;
 import lombok.AllArgsConstructor;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
@@ -17,59 +21,51 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 @Service
-
+@ConfigurationProperties(prefix = "app.storage")
 public class ImageProcessingService {
 
     private ImageNamingService namingService;
     private StorageService storageService;
     private final ImageProcessor imageProcessor;
     private final CacheService cacheService;
+    private  final  ValidationService validationService;
+    private final StorageProperties storageProperties;
+
 
     public ImageProcessingService(StorageService storageService,
                                   ImageNamingService namingService,
                                   ImageProcessor imageProcessor,
-                                  CacheService cacheService) {
+                                  CacheService cacheService,
+                                  ValidationService validationService,
+                                  StorageProperties storageProperties) {
         this.storageService = storageService;
         this.namingService = namingService;
         this.imageProcessor = imageProcessor;
         this.cacheService = cacheService;
+        this.validationService = validationService;
+        this.storageProperties = storageProperties;
     }
 
-    public byte[] getProcessedImage(String filename, Integer targetW, Integer targetH) throws IOException {
+    public byte[] getProcessedImage(String filename, Integer requestedW, Integer requestedH) throws IOException, ImageNotFoundException, InvalidDimensionException {
+
+          String originalLocation = storageProperties.getOriginalLocation() ;
+          String cacheLocation= storageProperties.getCacheLocation();
 
 
-        String originalLocation  = "D:/quickimage/originals";
-        String cacheLocation  = "D:/quickimage/cached";
+        SafeDimension safeDimension =  validationService.getSafeDimensions(requestedW , requestedH );
 
-        filename = filename.toLowerCase();
+        String cacheName = namingService.ConstructName(filename, safeDimension.width(), safeDimension.height());
+        Path cachePath = storageService.getTargetPath(cacheName, cacheLocation );
+        if (cacheService.exists(cacheName, cachePath))  return cacheService.read(cachePath);
+
+
         Path sourcePath = storageService.getTargetPath(filename, originalLocation );
+        if (!Files.exists(sourcePath))  throw new ImageNotFoundException("File not found");
 
-
-        if (!Files.exists(sourcePath)) {
-            throw new FileNotFoundException("File not found");
-        }
 
         BufferedImage original = ImageIO.read(sourcePath.toFile());
+        BufferedImage resized = imageProcessor.process(original, safeDimension.width(), safeDimension.height());
 
-        int finalW = (targetW == null || targetW <= 0)
-                ? original.getWidth()
-                : targetW;
-
-        int finalH = (targetH == null || targetH <= 0)
-                ? original.getHeight()
-                : targetH;
-
-
-        String cacheName = namingService.ConstructName(filename, finalW, finalH);
-
-        Path cachePath = storageService.getTargetPath(cacheName, cacheLocation );
-
-
-        if (cacheService.exists(cacheName, cachePath)) {
-            return cacheService.read(cachePath);
-        }
-
-        BufferedImage resized = imageProcessor.process(original, finalW, finalH);
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         ImageIO.write(resized, "JPG", outputStream);

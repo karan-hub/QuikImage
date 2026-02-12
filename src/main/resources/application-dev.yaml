@@ -1,0 +1,11 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: quickimageDEV
+app:
+  storage:
+    original-location: D:/quickimage/originals
+    cache-location: D:/quickimage/cached
+

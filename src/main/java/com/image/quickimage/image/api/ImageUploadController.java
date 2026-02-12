@@ -1,8 +1,10 @@
 package com.image.quickimage.image.api;
 
 import com.image.quickimage.image.dto.FileUploadRequest;
+import com.image.quickimage.image.exception.ImageNotFoundException;
 import com.image.quickimage.image.service.ImageProcessingService;
 import com.image.quickimage.image.service.ImageUploadingService;
+import com.image.quickimage.image.service.InvalidDimensionException;
 import lombok.AllArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +33,7 @@ public class ImageUploadController {
     }
 
     @GetMapping("{name}")
-    public ResponseEntity<byte[]> getImage(@PathVariable String name ,  @RequestParam String w , @RequestParam String h  ) throws Exception {
+    public ResponseEntity<byte[]> getImage(@PathVariable String name ,  @RequestParam String w , @RequestParam String h  ) throws Exception, InvalidDimensionException, ImageNotFoundException {
          byte[] processedImage =  processingService.getProcessedImage(name, Integer.valueOf(w), Integer.valueOf(h));
         return ResponseEntity.ok()
                 .contentType(MediaType.IMAGE_JPEG)

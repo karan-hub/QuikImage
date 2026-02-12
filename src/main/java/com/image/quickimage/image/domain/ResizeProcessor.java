@@ -14,6 +14,7 @@ public class ResizeProcessor implements  ImageProcessor   {
                 (double) targetW /  input.getWidth(),
                 (double) targetH /  input.getHeight()
         );
+        ratio = Math.min(ratio, 1.0);
 
         int actualW = (int) ( input.getWidth() * ratio);
         int actualH = (int) ( input.getHeight() * ratio);
