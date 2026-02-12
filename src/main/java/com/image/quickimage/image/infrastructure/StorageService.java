@@ -1,10 +1,16 @@
 package com.image.quickimage.image.infrastructure;
 
+import com.image.quickimage.image.config.StorageProperties;
 import com.image.quickimage.image.dto.FileUploadRequest;
+import com.image.quickimage.image.exception.DuplicateNameException;
 import com.image.quickimage.image.exception.UnsupportedMediaException;
+import com.image.quickimage.image.model.ImageEntity;
+import com.image.quickimage.image.repository.ImageRepository;
+import lombok.AllArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.MediaType;
+import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,7 +25,10 @@ import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
 @Service
+@AllArgsConstructor
 public class StorageService {
+    private ImageRepository imageRepository;
+    private StorageProperties storageProperties;
     public  boolean exists(String filename , Path targetPath) {
         if (Files.exists(targetPath)){
             System.out.println("Cache Hit! ");
@@ -45,7 +54,6 @@ public class StorageService {
 //    read(String filename)
 
     public String saveOriginal(FileUploadRequest request)   {
-
         MultipartFile image = request.image();
 
         String contentType = image.getContentType();
@@ -53,31 +61,43 @@ public class StorageService {
             throw new UnsupportedMediaException("Only image files are allowed");
         }
 
+
         String baseName = (request.name() != null && !request.name().isBlank())
                 ? request.name()
                 : "image";
-
         baseName = baseName.replaceAll("[^a-zA-Z0-9-]", "_");
+
+        if (imageRepository.existsByName(baseName))
+            throw new DuplicateNameException("The name '" + baseName + "' is already in use.");
+
 
         String originalName = image.getOriginalFilename();
 
         String extension = originalName != null && originalName.contains(".")
                 ? originalName.substring(originalName.lastIndexOf("."))
                 : ".jpg";
+        String fileName = UUID.randomUUID().toString().substring(0, 8) + extension;
 
-        String fileName = baseName + "_" + UUID.randomUUID().toString().substring(0, 4) + extension;
 
-        Path uploadDir = Paths.get("D:/quickimage/originals");
+        String originalLocation = storageProperties.getOriginalLocation();
+        Path uploadDir = Paths.get(originalLocation);
 
         try (InputStream in = image.getInputStream()) {
             Files.createDirectories(uploadDir);
             Path targetPath = uploadDir.resolve(fileName);
-            Files.copy(in, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            Files.copy( in, targetPath, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to store file on disk" ,e);
         }
 
-        return "Image uploaded successfully: " + fileName;
+
+        ImageEntity imageEntity = new ImageEntity();
+        imageEntity.setName(request.name());
+        imageEntity.setSystemName(fileName);
+        imageEntity.setContentType(image.getContentType());
+        imageRepository.save(imageEntity);
+
+        return "Image uploaded successfully: " + baseName;
     }
 
 

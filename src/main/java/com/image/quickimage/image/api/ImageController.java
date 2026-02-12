@@ -2,17 +2,15 @@ package com.image.quickimage.image.api;
 
 import com.image.quickimage.image.dto.FileUploadRequest;
 import com.image.quickimage.image.exception.ImageNotFoundException;
-import com.image.quickimage.image.exception.UnsupportedMediaException;
 import com.image.quickimage.image.infrastructure.StorageService;
+import com.image.quickimage.image.model.ImageEntity;
+import com.image.quickimage.image.repository.ImageRepository;
 import com.image.quickimage.image.service.ImageProcessingService;
-import com.image.quickimage.image.service.InvalidDimensionException;
 import lombok.AllArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
 
 
 @RestController
@@ -21,7 +19,7 @@ import java.io.IOException;
 public class ImageController {
 
     private StorageService storageService;
-
+    private ImageRepository repository;
     private ImageProcessingService processingService;
 
 
@@ -44,7 +42,10 @@ public class ImageController {
                                            @RequestParam(defaultValue = "500") Integer w,
                                            @RequestParam(defaultValue = "500") Integer h) throws Exception {
 
-        byte[] imageByte =  processingService.getProcessedImage(name,  w ,h);
+        ImageEntity imageInfo = repository.findByName(name)
+                .orElseThrow(() -> new ImageNotFoundException("Image not found in DB" + name));
+
+        byte[] imageByte =  processingService.getProcessedImage(imageInfo.getSystemName(),  w ,h);
 
         MediaType contentType = storageService.getImageContentType(name);
 
@@ -52,4 +53,6 @@ public class ImageController {
                 .contentType(contentType)
                 .body(imageByte);
     }
+
+
 }

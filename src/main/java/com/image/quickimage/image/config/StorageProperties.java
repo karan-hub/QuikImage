@@ -1,4 +1,4 @@
-package com.image.quickimage.image.domain;
+package com.image.quickimage.image.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;

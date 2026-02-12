@@ -3,20 +3,16 @@ package com.image.quickimage.image.service;
 import com.image.quickimage.image.domain.ImageNamingService;
 import com.image.quickimage.image.domain.ImageProcessor;
 import com.image.quickimage.image.domain.SafeDimension;
-import com.image.quickimage.image.domain.StorageProperties;
+import com.image.quickimage.image.config.StorageProperties;
 import com.image.quickimage.image.exception.ImageNotFoundException;
 import com.image.quickimage.image.infrastructure.CacheService;
 import com.image.quickimage.image.infrastructure.StorageService;
-import lombok.AllArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -56,19 +52,20 @@ public class ImageProcessingService {
 
         String cacheName = namingService.ConstructName(filename, safeDimension.width(), safeDimension.height());
         Path cachePath = storageService.getTargetPath(cacheName, cacheLocation );
+
         if (cacheService.exists(cacheName, cachePath))  return cacheService.read(cachePath);
 
-
         Path sourcePath = storageService.getTargetPath(filename, originalLocation );
-        if (!Files.exists(sourcePath))  throw new ImageNotFoundException("File not found");
-
+        if (!Files.exists(sourcePath))  throw new ImageNotFoundException("File not found on disk: " + filename);
 
         BufferedImage original = ImageIO.read(sourcePath.toFile());
+
         BufferedImage resized = imageProcessor.process(original, safeDimension.width(), safeDimension.height());
 
+        String format = filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        ImageIO.write(resized, "JPG", outputStream);
+        ImageIO.write(resized, format, outputStream);
 
         byte[] result = outputStream.toByteArray();
         Files.write(cachePath, result);
