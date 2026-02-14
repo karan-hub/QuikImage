@@ -15,6 +15,7 @@ public class ImageEntity {
     @Id
     private Long id;
 
+    @Column(unique = true, nullable = false)
     private  String name;
     private  String systemName;
     private  String contentType;

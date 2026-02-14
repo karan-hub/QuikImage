@@ -68,7 +68,7 @@ public class StorageService {
         baseName = baseName.replaceAll("[^a-zA-Z0-9-]", "_");
 
         if (imageRepository.existsByName(baseName))
-            throw new DuplicateNameException("The name '" + baseName + "' is already in use.");
+            throw new DuplicateNameException("Database error: This name is already taken or invalid. : " + baseName );
 
 
         String originalName = image.getOriginalFilename();
@@ -92,7 +92,7 @@ public class StorageService {
 
 
         ImageEntity imageEntity = new ImageEntity();
-        imageEntity.setName(request.name());
+        imageEntity.setName(baseName);
         imageEntity.setSystemName(fileName);
         imageEntity.setContentType(image.getContentType());
         imageRepository.save(imageEntity);

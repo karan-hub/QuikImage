@@ -23,9 +23,17 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleUnsupportedMediaException(UnsupportedMediaException e){
         return  new  ResponseEntity<>(e.getMessage() , HttpStatus.UNSUPPORTED_MEDIA_TYPE);
     }
+
+    @ExceptionHandler(DuplicateNameException.class)
+    public ResponseEntity<String> handleIO(DuplicateNameException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+    }
+
     @ExceptionHandler(IOException.class)
     public ResponseEntity<String> handleIO(IOException e) {
          return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing file");
     }
+
+
 }
 

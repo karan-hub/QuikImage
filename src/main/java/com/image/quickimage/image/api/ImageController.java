@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 
 @RestController
 @RequestMapping("/api/v1/image")
@@ -37,15 +39,24 @@ public class ImageController {
         return ResponseEntity.ok("Received " + saved);
     }
 
+
+    @GetMapping("/all")
+    public ResponseEntity<List<ImageEntity>> getAll(@ModelAttribute FileUploadRequest request)   {
+        List<ImageEntity> all = repository.findAll();
+        return  ResponseEntity.ok(all);
+    }
+
+
+
+
     @GetMapping("{name}")
     public ResponseEntity<byte[]> getImage(@PathVariable String name ,
                                            @RequestParam(defaultValue = "500") Integer w,
                                            @RequestParam(defaultValue = "500") Integer h) throws Exception {
 
-        ImageEntity imageInfo = repository.findByName(name)
-                .orElseThrow(() -> new ImageNotFoundException("Image not found in DB" + name));
 
-        byte[] imageByte =  processingService.getProcessedImage(imageInfo.getSystemName(),  w ,h);
+
+        byte[] imageByte =  processingService.getProcessedImage(name,  w ,h);
 
         MediaType contentType = storageService.getImageContentType(name);
 
