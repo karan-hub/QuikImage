@@ -3,6 +3,7 @@ package com.image.quickimage.image.api;
 import com.image.quickimage.image.domain.Response.ImageResponse;
 import com.image.quickimage.image.dto.FileUploadRequest;
 import com.image.quickimage.image.exception.ImageNotFoundException;
+import com.image.quickimage.image.exception.InvalidDimensionException;
 import com.image.quickimage.image.infrastructure.StorageService;
 import com.image.quickimage.image.model.ImageEntity;
 import com.image.quickimage.image.repository.ImageRepository;
@@ -51,19 +52,23 @@ public class ImageController {
 
 
 
-    @GetMapping("{name}")
-    public ResponseEntity<byte[]> getImage(@PathVariable String name ,
-                                           @RequestParam(defaultValue = "500") Integer w,
-                                           @RequestParam(defaultValue = "500") Integer h,
-                                           @RequestParam(defaultValue = "80") Integer q ) throws Exception {
+    @GetMapping("/{name:.+}.{extension}")
+    public ResponseEntity<byte[]> getImage(
+            @PathVariable String name,
+            @PathVariable String extension,
+            @RequestParam(defaultValue = "500") int w,
+            @RequestParam(defaultValue = "500") int h,
+            @RequestParam(defaultValue = "80") int q
+    ) throws Exception {
 
+        if (w <= 0 || h <= 0)  throw new InvalidDimensionException("Width and height must be greater than 0");
 
-
-        ImageResponse response =  processingService.getProcessedImage(name,  w ,h , q);
+        ImageResponse response = processingService.getProcessedImage(name, extension ,w, h, q);
 
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(response.contentType()))
-                .header(HttpHeaders.CONTENT_DISPOSITION , "inline; filename=\"" + response.fileName() + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + response.fileName() + "\"")
+                .header(HttpHeaders.CACHE_CONTROL, "public, max-age=31536000")
                 .body(response.data());
     }
 

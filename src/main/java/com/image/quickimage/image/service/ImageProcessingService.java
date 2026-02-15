@@ -23,7 +23,6 @@ import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -83,25 +82,19 @@ public class ImageProcessingService {
         System.out.println("🚀 Available Writers: " + Arrays.toString(ImageIO.getWriterFormatNames()));
     }
 
-    public ImageResponse getProcessedImage(String fileName, Integer requestedW, Integer requestedH, Integer quality) throws Exception {
+
+    public ImageResponse getProcessedImage(String friendlyName, String requestedExt ,Integer requestedW, Integer requestedH, Integer quality) throws Exception {
 
 
-        int dotIndex = fileName.lastIndexOf(".");
-        String nameOnly = (dotIndex == -1) ? fileName : fileName.substring(0, dotIndex);
-        String requestedExt = (dotIndex == -1) ? null : fileName.substring(dotIndex + 1);
-
-
-        ImageEntity imageInfo = imageRepository.findByName(nameOnly)
-                .orElseThrow(() -> new ImageNotFoundException("Image not found in DB: " + nameOnly));
+        ImageEntity imageInfo = imageRepository.findByName(friendlyName)
+                .orElseThrow(() -> new ImageNotFoundException("Image not found in DB : " + friendlyName));
 
 
         SafeDimension safeDimension = validationService.getSafeDimensions(requestedW, requestedH);
         ImageNamingResult resolvedName = namingService.resolveNaming(imageInfo, requestedExt, safeDimension.width(), safeDimension.height());
 
         Path cachePath = storageService.getTargetPath(resolvedName.cacheFileName(), storageProperties.getCacheLocation());
-
-         if (Files.exists(cachePath))
-             return cacheService.read(cachePath);
+        if (Files.exists(cachePath))  return cacheService.read(cachePath);
 
 
 
@@ -115,7 +108,8 @@ public class ImageProcessingService {
         BufferedImage resized = imageProcessor.process(original, safeDimension.width(), safeDimension.height());
 
 
-        float qualityFactor = (quality != null) ? quality / 100.0f : 0.8f;
+        float qualityFactor = (quality != null) ? (float) quality / 100.0f : 0.8f;
+        qualityFactor = Math.max(0.0f, Math.min(1.0f, qualityFactor));
         String format = resolvedName.outputExtension().replace(".", "");
 
 
@@ -125,33 +119,32 @@ public class ImageProcessingService {
         return new ImageResponse(resultBytes, mimeType, resolvedName.cacheFileName());
     }
 
-
     private void writeCompressedImage(BufferedImage image, String format, float quality, Path targetPath) throws IOException {
         String cleanFormat = format.toLowerCase().trim().replace(".", "");
         if (cleanFormat.equals("jpg")) cleanFormat = "jpeg";
 
         Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName(cleanFormat);
-        if (!writers.hasNext()) throw new IOException("No writer for: " + cleanFormat);
+        if (!writers.hasNext()) throw new IOException("No writer found for format: " + cleanFormat);
 
         ImageWriter writer = writers.next();
-        ImageWriteParam param = writer.getDefaultWriteParam();
+        try {
+            ImageWriteParam param = writer.getDefaultWriteParam();
 
-        if (param.canWriteCompressed()) {
-            param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+            if (param.canWriteCompressed()) {
+                param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
 
-            // Fix for "No compression type set!"
-            String[] compressionTypes = param.getCompressionTypes();
-            if (compressionTypes != null && compressionTypes.length > 0) {
-                // For WebP, index 0 is typically "Lossy"
-                param.setCompressionType(compressionTypes[0]);
+                String[] compressionTypes = param.getCompressionTypes();
+                if (compressionTypes != null && compressionTypes.length > 0) {
+                    param.setCompressionType(compressionTypes[0]);
+                }
+                param.setCompressionQuality(quality);
             }
+            Files.createDirectories(targetPath.getParent());
 
-            param.setCompressionQuality(quality);
-        }
-
-        try (ImageOutputStream ios = ImageIO.createImageOutputStream(targetPath.toFile())) {
-            writer.setOutput(ios);
-            writer.write(null, new IIOImage(image, null, null), param);
+            try (ImageOutputStream ios = ImageIO.createImageOutputStream(targetPath.toFile())) {
+                writer.setOutput(ios);
+                writer.write(null, new IIOImage(image, null, null), param);
+            }
         } finally {
             writer.dispose();
         }

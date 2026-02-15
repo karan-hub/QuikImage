@@ -1,24 +1,24 @@
 package com.image.quickimage.image.service;
 
+import com.image.quickimage.image.config.ImageProperties;
 import com.image.quickimage.image.domain.SafeDimension;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-
 @Service
 public class ValidationService {
-    private static final int MAX = 2000;
-    private static final int MIN = 10;
-    private static final int ORIGINAL_WIDTH = 500;
-    private static final int ORIGINAL_HEIGHT= 500;
+    private   final ImageProperties imageProperties ;
 
-     public  SafeDimension  getSafeDimensions(Integer requestedW, Integer requestedH)  {
+    public ValidationService(ImageProperties imageProperties) {
+        this.imageProperties = imageProperties;
+    }
 
-         int w = (requestedW == null || requestedW <= 0) ? ORIGINAL_WIDTH : requestedW;
-         int h = (requestedH == null || requestedH <= 0) ? ORIGINAL_HEIGHT : requestedH;
+    public  SafeDimension  getSafeDimensions(Integer requestedW, Integer requestedH)  {
 
-         int safeW = Math.max(MIN, Math.min(MAX, w));
-         int safeH = Math.max(MIN, Math.min(MAX, h));
+         int w = (requestedW == null || requestedW <= 0) ?  imageProperties.originalWidth() : requestedW;
+         int h = (requestedH == null || requestedH <= 0) ?  imageProperties.originalHeight() : requestedH;
+
+         int safeW = Math.max(imageProperties.min(), Math.min( imageProperties.min(), w));
+         int safeH = Math.max(imageProperties.min(), Math.min( imageProperties.max(), h));
 
          return new SafeDimension(safeW, safeH);
      }

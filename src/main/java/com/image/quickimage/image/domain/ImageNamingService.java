@@ -46,13 +46,12 @@ private ImageRepository repository;
         String originalExt = (dotIndex == -1) ? "jpg" : systemName.substring(dotIndex + 1);
 
         String finalExt = (requestedFormat != null && !requestedFormat.isEmpty())
-                ? requestedFormat
+                ? requestedFormat.toLowerCase().trim().replace(".", "")
                 : originalExt;
 
         String cacheFileName = String.format("%s_w%d_h%d.%s", baseUuid, w, h, finalExt);
 
         return new ImageNamingResult(baseUuid, finalExt, cacheFileName);
-
     }
 
     public String generateUniqueFriendlyName(String rawName) {
