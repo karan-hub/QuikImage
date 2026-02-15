@@ -1,5 +1,6 @@
 package com.image.quickimage.image.infrastructure;
 
+import com.image.quickimage.image.domain.Response.ImageResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
@@ -14,8 +15,14 @@ public class CacheService {
                             return   Files.exists(targetPath) ;
             }
 
-    public byte[] read(Path path) throws IOException {
-        return Files.readAllBytes(path);
+    public ImageResponse read(Path path) throws IOException {
+        byte[] allBytes = Files.readAllBytes(path);
+        String fileName = path.getFileName().toString();
+        String extension = fileName.substring(fileName.lastIndexOf(".") + 1);
+
+        String contentType = "image/" + extension.toLowerCase();
+
+        return new ImageResponse(allBytes, contentType, fileName);
     }
 
     public void write(Path path, byte[] content) throws IOException {

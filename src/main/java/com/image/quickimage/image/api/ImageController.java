@@ -1,5 +1,6 @@
 package com.image.quickimage.image.api;
 
+import com.image.quickimage.image.domain.Response.ImageResponse;
 import com.image.quickimage.image.dto.FileUploadRequest;
 import com.image.quickimage.image.exception.ImageNotFoundException;
 import com.image.quickimage.image.infrastructure.StorageService;
@@ -7,6 +8,7 @@ import com.image.quickimage.image.model.ImageEntity;
 import com.image.quickimage.image.repository.ImageRepository;
 import com.image.quickimage.image.service.ImageProcessingService;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -52,17 +54,17 @@ public class ImageController {
     @GetMapping("{name}")
     public ResponseEntity<byte[]> getImage(@PathVariable String name ,
                                            @RequestParam(defaultValue = "500") Integer w,
-                                           @RequestParam(defaultValue = "500") Integer h) throws Exception {
+                                           @RequestParam(defaultValue = "500") Integer h,
+                                           @RequestParam(defaultValue = "80") Integer q ) throws Exception {
 
 
 
-        byte[] imageByte =  processingService.getProcessedImage(name,  w ,h);
-
-        MediaType contentType = storageService.getImageContentType(name);
+        ImageResponse response =  processingService.getProcessedImage(name,  w ,h , q);
 
         return ResponseEntity.ok()
-                .contentType(contentType)
-                .body(imageByte);
+                .contentType(MediaType.parseMediaType(response.contentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION , "inline; filename=\"" + response.fileName() + "\"")
+                .body(response.data());
     }
 
 

@@ -1,6 +1,7 @@
 package com.image.quickimage.image.infrastructure;
 
 import com.image.quickimage.image.config.StorageProperties;
+import com.image.quickimage.image.domain.ImageNamingService;
 import com.image.quickimage.image.dto.FileUploadRequest;
 import com.image.quickimage.image.exception.DuplicateNameException;
 import com.image.quickimage.image.exception.UnsupportedMediaException;
@@ -29,6 +30,7 @@ import java.util.UUID;
 public class StorageService {
     private ImageRepository imageRepository;
     private StorageProperties storageProperties;
+    private  final ImageNamingService namingService;
     public  boolean exists(String filename , Path targetPath) {
         if (Files.exists(targetPath)){
             System.out.println("Cache Hit! ");
@@ -53,51 +55,45 @@ public class StorageService {
 
 //    read(String filename)
 
-    public String saveOriginal(FileUploadRequest request)   {
+    public String saveOriginal(FileUploadRequest request) {
         MultipartFile image = request.image();
-
         String contentType = image.getContentType();
+
         if (contentType == null || !contentType.startsWith("image/")) {
             throw new UnsupportedMediaException("Only image files are allowed");
         }
 
 
-        String baseName = (request.name() != null && !request.name().isBlank())
-                ? request.name()
-                : "image";
-        baseName = baseName.replaceAll("[^a-zA-Z0-9-]", "_");
+        String finalFriendlyName = namingService.generateUniqueFriendlyName(
+                (request.name() != null && !request.name().isBlank())
+                        ? request.name()
+                        : image.getOriginalFilename()
+        );
 
-        if (imageRepository.existsByName(baseName))
-            throw new DuplicateNameException("Database error: This name is already taken or invalid. : " + baseName );
-
-
-        String originalName = image.getOriginalFilename();
-
-        String extension = originalName != null && originalName.contains(".")
-                ? originalName.substring(originalName.lastIndexOf("."))
-                : ".jpg";
-        String fileName = UUID.randomUUID().toString().substring(0, 8) + extension;
+        String systemFileName = namingService.generateInternalSystemName(image.getOriginalFilename());
 
 
         String originalLocation = storageProperties.getOriginalLocation();
         Path uploadDir = Paths.get(originalLocation);
 
-        try (InputStream in = image.getInputStream()) {
+        try {
             Files.createDirectories(uploadDir);
-            Path targetPath = uploadDir.resolve(fileName);
-            Files.copy( in, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            Path targetPath = uploadDir.resolve(systemFileName);
+            try (InputStream in = image.getInputStream()) {
+                Files.copy(in, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            }
         } catch (IOException e) {
-            throw new RuntimeException("Failed to store file on disk" ,e);
+            throw new RuntimeException("Failed to store file on disk", e);
         }
 
 
         ImageEntity imageEntity = new ImageEntity();
-        imageEntity.setName(baseName);
-        imageEntity.setSystemName(fileName);
-        imageEntity.setContentType(image.getContentType());
+        imageEntity.setName(finalFriendlyName);
+        imageEntity.setSystemName(systemFileName);
+        imageEntity.setContentType(contentType);
         imageRepository.save(imageEntity);
 
-        return "Image uploaded successfully: " + baseName;
+        return "Image uploaded successfully. Friendly URL name: " + finalFriendlyName;
     }
 
 
@@ -118,13 +114,6 @@ public class StorageService {
         if (lowerName.endsWith(".png")) return MediaType.IMAGE_PNG;
         if (lowerName.endsWith(".gif")) return MediaType.IMAGE_GIF;
         return MediaType.IMAGE_JPEG;
-
-//        try {
-//            String contentType = Files.probeContentType(path);
-//            return  MediaType.parseMediaType(contentType != null ? contentType : "image/jpeg");
-//        } catch (IOException e) {
-//            return  MediaType.IMAGE_JPEG;
-//        }
 
     }
 
