@@ -24,7 +24,7 @@ app:
     original-location: D:/quickimage/originals
     cache-location: D:/quickimage/cached
   image:
-    original-width: 500
-    original-height: 500
-    max: 200
+    original-width: 800
+    original-height: 800
+    max: 2050
     min: 10

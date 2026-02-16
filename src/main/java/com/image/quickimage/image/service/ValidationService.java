@@ -12,17 +12,17 @@ public class ValidationService {
         this.imageProperties = imageProperties;
     }
 
-    public  SafeDimension  getSafeDimensions(Integer requestedW, Integer requestedH)  {
+    public SafeDimension getSafeDimensions(Integer requestedW, Integer requestedH) {
 
-         int w = (requestedW == null || requestedW <= 0) ?  imageProperties.originalWidth() : requestedW;
-         int h = (requestedH == null || requestedH <= 0) ?  imageProperties.originalHeight() : requestedH;
+         int w = (requestedW == null || requestedW <= 0) ? imageProperties.originalWidth() : requestedW;
+        int h = (requestedH == null || requestedH <= 0) ? imageProperties.originalHeight() : requestedH;
 
-         int safeW = Math.max(imageProperties.min(), Math.min( imageProperties.min(), w));
-         int safeH = Math.max(imageProperties.min(), Math.min( imageProperties.max(), h));
 
-         return new SafeDimension(safeW, safeH);
-     }
+        int safeW = Math.max(imageProperties.min(), Math.min(imageProperties.max(), w));
+        int safeH = Math.max(imageProperties.min(), Math.min(imageProperties.max(), h));
 
+        return new SafeDimension(safeW, safeH);
+    }
 //
 //    METHOD validateFileType(File file):
 //    // Use ImageIO to check if it can actually read the file
