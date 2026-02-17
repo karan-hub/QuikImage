@@ -1,6 +1,8 @@
 package com.image.quickimage.image.service;
 
 import javax.imageio.spi.IIORegistry;
+
+import com.image.quickimage.image.config.ImageProperties;
 import jakarta.annotation.PostConstruct;
 
 import com.image.quickimage.image.domain.ImageNamingResult;
@@ -45,6 +47,8 @@ public class ImageProcessingService {
     private  final  ValidationService validationService;
     private final StorageProperties storageProperties;
     private final ImageRepository imageRepository;
+    private final ImageProperties imageProperties;
+
 
 
     public ImageProcessingService(StorageService storageService,
@@ -52,7 +56,7 @@ public class ImageProcessingService {
                                   ImageProcessor imageProcessor,
                                   CacheService cacheService,
                                   ValidationService validationService,
-                                  StorageProperties storageProperties, ImageRepository imageRepository) {
+                                  StorageProperties storageProperties, ImageRepository imageRepository, ImageProperties imageProperties) {
         this.storageService = storageService;
         this.namingService = namingService;
         this.imageProcessor = imageProcessor;
@@ -60,6 +64,7 @@ public class ImageProcessingService {
         this.validationService = validationService;
         this.storageProperties = storageProperties;
         this.imageRepository = imageRepository;
+        this.imageProperties = imageProperties;
     }
 
     @PostConstruct
@@ -83,18 +88,30 @@ public class ImageProcessingService {
     }
 
 
-    public ImageResponse getProcessedImage(String friendlyName, String requestedExt ,Integer requestedW, Integer requestedH, Integer quality) throws Exception {
-
+    public ImageResponse getProcessedImage(String friendlyName, String requestedExt ,Integer requestedW, Integer requestedH, Integer quality ,String acceptHeader) throws Exception {
 
         ImageEntity imageInfo = imageRepository.findByName(friendlyName)
                 .orElseThrow(() -> new ImageNotFoundException("Image not found in DB : " + friendlyName));
 
-
+        String finalExt = namingService.determineFormat(requestedExt, acceptHeader);
         SafeDimension safeDimension = validationService.getSafeDimensions(requestedW, requestedH);
-        ImageNamingResult resolvedName = namingService.resolveNaming(imageInfo, requestedExt, safeDimension.width(), safeDimension.height());
+
+
+        ImageNamingResult resolvedName = namingService.resolveNaming(
+                imageInfo,
+                finalExt,
+                safeDimension.width(),
+                safeDimension.height()
+        );
 
         Path cachePath = storageService.getTargetPath(resolvedName.cacheFileName(), storageProperties.getCacheLocation());
-        if (Files.exists(cachePath))  return cacheService.read(cachePath);
+
+        if (Files.exists(cachePath)) {
+            if (Files.size(cachePath) > 0)
+                return cacheService.read(cachePath);
+            else
+                Files.delete(cachePath);
+        }
 
 
 
@@ -110,16 +127,21 @@ public class ImageProcessingService {
 
         float qualityFactor = (quality != null) ? (float) quality / 100.0f : 0.8f;
         qualityFactor = Math.max(0.0f, Math.min(1.0f, qualityFactor));
-        String format = resolvedName.outputExtension().replace(".", "");
 
+        String format = resolvedName.outputExtension().replace(".", "");
 
         writeCompressedImage(resized, format, qualityFactor, cachePath);
         byte[] resultBytes = Files.readAllBytes(cachePath);
-        String mimeType = "image/" + format;
+
+        String mimeType = (format.equals("jpg") || format.equals("jpeg")) ? "image/jpeg" : "image/" + format;
+
         return new ImageResponse(resultBytes, mimeType, resolvedName.cacheFileName());
     }
 
     private void writeCompressedImage(BufferedImage image, String format, float quality, Path targetPath) throws IOException {
+        float safeQuality = Math.max(imageProperties.minQuality(),
+                Math.min(imageProperties.maxQuality(), quality));
+
         String cleanFormat = format.toLowerCase().trim().replace(".", "");
         if (cleanFormat.equals("jpg")) cleanFormat = "jpeg";
 
@@ -131,19 +153,23 @@ public class ImageProcessingService {
             ImageWriteParam param = writer.getDefaultWriteParam();
 
             if (param.canWriteCompressed()) {
+
                 param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
 
-                String[] compressionTypes = param.getCompressionTypes();
-                if (compressionTypes != null && compressionTypes.length > 0) {
-                    param.setCompressionType(compressionTypes[0]);
+                String[] types = param.getCompressionTypes();
+                if (types != null && types.length > 0) {
+
+                    param.setCompressionType(types[0]);
                 }
-                param.setCompressionQuality(quality);
+                param.setCompressionQuality(safeQuality);
             }
+
             Files.createDirectories(targetPath.getParent());
 
-            try (ImageOutputStream ios = ImageIO.createImageOutputStream(targetPath.toFile())) {
+             try (ImageOutputStream ios = ImageIO.createImageOutputStream(targetPath.toFile())) {
                 writer.setOutput(ios);
                 writer.write(null, new IIOImage(image, null, null), param);
+                ios.flush(); // IMPORTANT
             }
         } finally {
             writer.dispose();

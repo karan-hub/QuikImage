@@ -9,6 +9,9 @@ public record ImageProperties(
              int max ,
               int min,
               int originalWidth,
-              int originalHeight
+              int originalHeight,
+             int maxQuality,
+             int minQuality,
+             int defaultQuality
 ) {
 }

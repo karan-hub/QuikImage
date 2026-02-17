@@ -17,6 +17,7 @@ public class ResizeProcessor implements  ImageProcessor   {
         return Thumbnails.of(input)
                 .size(targetW, targetH)
                 .outputQuality(1.0f)
+                .imageType(BufferedImage.TYPE_INT_RGB)
                 .asBufferedImage();
     }
 

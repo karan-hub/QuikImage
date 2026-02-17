@@ -14,9 +14,8 @@ public class ValidationService {
 
     public SafeDimension getSafeDimensions(Integer requestedW, Integer requestedH) {
 
-         int w = (requestedW == null || requestedW <= 0) ? imageProperties.originalWidth() : requestedW;
+        int w = (requestedW == null || requestedW <= 0) ? imageProperties.originalWidth() : requestedW;
         int h = (requestedH == null || requestedH <= 0) ? imageProperties.originalHeight() : requestedH;
-
 
         int safeW = Math.max(imageProperties.min(), Math.min(imageProperties.max(), w));
         int safeH = Math.max(imageProperties.min(), Math.min(imageProperties.max(), h));

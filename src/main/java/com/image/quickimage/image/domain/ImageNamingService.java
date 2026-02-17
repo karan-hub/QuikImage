@@ -86,4 +86,11 @@ private ImageRepository repository;
 
          return UUID.randomUUID().toString().replace("-", "").substring(0, 16) + ext;
     }
+
+    public String determineFormat(String originalExt, String acceptHeader) {
+        if (acceptHeader != null && acceptHeader.contains("image/webp")) {
+            return "webp";
+        }
+        return originalExt.toLowerCase();
+    }
 }

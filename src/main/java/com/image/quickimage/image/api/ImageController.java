@@ -58,17 +58,19 @@ public class ImageController {
             @PathVariable String extension,
             @RequestParam(defaultValue = "500") int w,
             @RequestParam(defaultValue = "500") int h,
-            @RequestParam(defaultValue = "80") int q
-    ) throws Exception {
+            @RequestParam(defaultValue = "80") int q,
+            @RequestHeader(value = "Accept" , required = false) String acceptHeader
+            ) throws Exception {
 
         if (w <= 0 || h <= 0)  throw new InvalidDimensionException("Width and height must be greater than 0");
 
-        ImageResponse response = processingService.getProcessedImage(name, extension ,w, h, q);
+        ImageResponse response = processingService.getProcessedImage(name, extension ,w, h, q , acceptHeader);
 
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(response.contentType()))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + response.fileName() + "\"")
                 .header(HttpHeaders.CACHE_CONTROL, "public, max-age=31536000")
+                .header(HttpHeaders.VARY , HttpHeaders.ACCEPT)
                 .body(response.data());
     }
 
