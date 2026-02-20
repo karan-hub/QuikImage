@@ -25,6 +25,7 @@ import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -48,6 +49,8 @@ public class ImageProcessingService {
     private final StorageProperties storageProperties;
     private final ImageRepository imageRepository;
     private final ImageProperties imageProperties;
+    private final RedisCacheService redisCacheService;
+
 
 
 
@@ -56,7 +59,7 @@ public class ImageProcessingService {
                                   ImageProcessor imageProcessor,
                                   CacheService cacheService,
                                   ValidationService validationService,
-                                  StorageProperties storageProperties, ImageRepository imageRepository, ImageProperties imageProperties) {
+                                  StorageProperties storageProperties, ImageRepository imageRepository, ImageProperties imageProperties, RedisCacheService redisCacheService) {
         this.storageService = storageService;
         this.namingService = namingService;
         this.imageProcessor = imageProcessor;
@@ -65,6 +68,7 @@ public class ImageProcessingService {
         this.storageProperties = storageProperties;
         this.imageRepository = imageRepository;
         this.imageProperties = imageProperties;
+        this.redisCacheService = redisCacheService;
     }
 
     @PostConstruct
@@ -96,26 +100,44 @@ public class ImageProcessingService {
         String finalExt = namingService.determineFormat(requestedExt, acceptHeader);
         SafeDimension safeDimension = validationService.getSafeDimensions(requestedW, requestedH);
 
+        int finalQualityInt = (quality != null) ? quality : (int)(imageProperties.defaultQuality() * 100);
+        float qualityFactor = (float) finalQualityInt / 100.0f;
+        qualityFactor = Math.max(imageProperties.minQuality(), Math.min(imageProperties.maxQuality(), qualityFactor));
 
-        ImageNamingResult resolvedName = namingService.resolveNaming(
+
+        String systemName = imageInfo.getSystemName();
+        String baseUuid = systemName.substring(0, systemName.lastIndexOf("."));
+//        String cacheKey = namingService.generateRedisKey(baseUuid, safeDimension.width(), safeDimension.height(), quality, finalExt);
+
+        ImageNamingResult namingResult = namingService.resolveNaming(
                 imageInfo,
                 finalExt,
                 safeDimension.width(),
                 safeDimension.height()
         );
 
-        Path cachePath = storageService.getTargetPath(resolvedName.cacheFileName(), storageProperties.getCacheLocation());
+        String redisKey = namingService.generateRedisKey(
+                namingResult.systemNameWithoutExtension(),
+                safeDimension.width(),
+                safeDimension.height(),
+                quality,
+                namingResult.outputExtension()
+        );
 
-        if (Files.exists(cachePath)) {
-            if (Files.size(cachePath) > 0)
-                return cacheService.read(cachePath);
-            else
-                Files.delete(cachePath);
+
+        byte[] cachedData = redisCacheService.get(redisKey);
+        String mimeType = (finalExt.equalsIgnoreCase("jpg") || finalExt.equalsIgnoreCase("jpeg")) ? "image/jpeg" : "image/" + finalExt;
+
+
+        if (cachedData != null) {
+            System.out.println("🚀 REDIS HIT: Serving " + redisKey);
+            return new ImageResponse(cachedData, mimeType, redisKey);
         }
 
 
-
+        System.out.println("🐢 REDIS MISS: Processing " + friendlyName);
         Path sourcePath = storageService.getTargetPath(imageInfo.getSystemName(), storageProperties.getOriginalLocation());
+
         if (!Files.exists(sourcePath))
             throw new ImageNotFoundException("Original file missing on disk: " + imageInfo.getSystemName());
 
@@ -124,55 +146,46 @@ public class ImageProcessingService {
         BufferedImage original = ImageIO.read(sourcePath.toFile());
         BufferedImage resized = imageProcessor.process(original, safeDimension.width(), safeDimension.height());
 
+        byte[] resultBytes = compressToByteArray(resized, finalExt, qualityFactor);
 
-        float qualityFactor = (quality != null) ? (float) quality / 100.0f : 0.8f;
-        qualityFactor = Math.max(0.0f, Math.min(1.0f, qualityFactor));
+        redisCacheService.save(redisKey, resultBytes);
 
-        String format = resolvedName.outputExtension().replace(".", "");
-
-        writeCompressedImage(resized, format, qualityFactor, cachePath);
-        byte[] resultBytes = Files.readAllBytes(cachePath);
-
-        String mimeType = (format.equals("jpg") || format.equals("jpeg")) ? "image/jpeg" : "image/" + format;
-
-        return new ImageResponse(resultBytes, mimeType, resolvedName.cacheFileName());
+        return new ImageResponse(resultBytes, mimeType, namingResult.systemNameWithoutExtension());
     }
 
-    private void writeCompressedImage(BufferedImage image, String format, float quality, Path targetPath) throws IOException {
-        float safeQuality = Math.max(imageProperties.minQuality(),
-                Math.min(imageProperties.maxQuality(), quality));
-
+    private byte[] compressToByteArray(BufferedImage image, String format, float quality) throws IOException {
         String cleanFormat = format.toLowerCase().trim().replace(".", "");
         if (cleanFormat.equals("jpg")) cleanFormat = "jpeg";
 
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName(cleanFormat);
-        if (!writers.hasNext()) throw new IOException("No writer found for format: " + cleanFormat);
+
+        if (!writers.hasNext()) throw new IOException("No writer for: " + cleanFormat);
 
         ImageWriter writer = writers.next();
-        try {
+        try (ImageOutputStream ios = ImageIO.createImageOutputStream(baos)) {
+            writer.setOutput(ios);
             ImageWriteParam param = writer.getDefaultWriteParam();
 
             if (param.canWriteCompressed()) {
-
                 param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+
 
                 String[] types = param.getCompressionTypes();
                 if (types != null && types.length > 0) {
-
                     param.setCompressionType(types[0]);
                 }
-                param.setCompressionQuality(safeQuality);
+
+
+                param.setCompressionQuality(quality);
             }
 
-            Files.createDirectories(targetPath.getParent());
-
-             try (ImageOutputStream ios = ImageIO.createImageOutputStream(targetPath.toFile())) {
-                writer.setOutput(ios);
-                writer.write(null, new IIOImage(image, null, null), param);
-                ios.flush(); // IMPORTANT
-            }
+            writer.write(null, new IIOImage(image, null, null), param);
+            ios.flush();
         } finally {
             writer.dispose();
         }
+        return baos.toByteArray();
     }
-}
+
+ }

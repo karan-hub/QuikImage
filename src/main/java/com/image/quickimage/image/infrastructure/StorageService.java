@@ -31,17 +31,9 @@ public class StorageService {
     private ImageRepository imageRepository;
     private StorageProperties storageProperties;
     private  final ImageNamingService namingService;
-    public  boolean exists(String filename , Path targetPath) {
-        if (Files.exists(targetPath)){
-            System.out.println("Cache Hit! ");
-             return  true;
-        }else {
-            return  false;
-        }
-    }
-
 
 // Path Handling
+
     public  Path getTargetPath(String filename , String location) throws FileNotFoundException {
         try{
             Path path = Paths.get(location);
@@ -54,7 +46,6 @@ public class StorageService {
     }
 
 //    read(String filename)
-
     public String saveOriginal(FileUploadRequest request) {
         MultipartFile image = request.image();
         String contentType = image.getContentType();
@@ -96,6 +87,15 @@ public class StorageService {
         return "Image uploaded successfully. Friendly URL name: " + finalFriendlyName;
     }
 
+
+    public  boolean exists(String filename , Path targetPath) {
+        if (Files.exists(targetPath)){
+            System.out.println("Cache Hit! ");
+            return  true;
+        }else {
+            return  false;
+        }
+    }
 
     public Resource getImage(String name) throws Exception {
 

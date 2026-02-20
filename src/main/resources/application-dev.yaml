@@ -5,6 +5,13 @@ spring:
   application:
     name: quickimageDEV
 
+  # --- ADD THIS SECTION ---
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  # ------------------------
+
   h2:
     console:
       enabled: true
@@ -22,6 +29,7 @@ spring:
 app:
   storage:
     original-location: D:/quickimage/originals
+    # Note: cache-location is technically unused now by our new logic!
     cache-location: D:/quickimage/cached
   image:
     original-width: 800

@@ -15,28 +15,6 @@ public class ImageNamingService {
 
 private ImageRepository repository;
 
-    public  String ConstructName(String systemName, int targetW , int  targetH ) throws IOException {
-
-        String cleanName = systemName.toLowerCase().trim();
-
-        int dotIndex = cleanName.lastIndexOf(".");
-        String friendlyName;
-        String targetFormat;
-
-        if (dotIndex >0){
-            friendlyName = cleanName.substring( 0,dotIndex);
-            targetFormat = cleanName.substring(dotIndex);
-        } else if (dotIndex == 0) {
-            friendlyName = UUID.randomUUID().toString().substring(0, 8);
-            targetFormat = cleanName.substring(dotIndex);
-        } else {
-            friendlyName = cleanName;
-            targetFormat = ".jpg";
-        }
-        return String.format("%s_w%d_h%d%s", friendlyName, targetW, targetH, targetFormat);
-
-    }
-
     public ImageNamingResult resolveNaming(ImageEntity entity, String requestedFormat, int w, int h) {
         String systemName = entity.getSystemName().toLowerCase().trim();
         int dotIndex = systemName.lastIndexOf(".");
@@ -51,7 +29,7 @@ private ImageRepository repository;
 
         String cacheFileName = String.format("%s_w%d_h%d.%s", baseUuid, w, h, finalExt);
 
-        return new ImageNamingResult(baseUuid, finalExt, cacheFileName);
+        return new ImageNamingResult(entity.getName(), finalExt, cacheFileName);
     }
 
     public String generateUniqueFriendlyName(String rawName) {
@@ -92,5 +70,33 @@ private ImageRepository repository;
             return "webp";
         }
         return originalExt.toLowerCase();
+    }
+
+    public String generateRedisKey(String baseUuid, int w, int h, int q, String format) {
+        return String.format("img:%s:w%d:h%d:q%d:%s",
+                baseUuid, w, h, q, format.toLowerCase().replace(".", ""));
+    }
+
+
+    public  String ConstructName(String systemName, int targetW , int  targetH ) throws IOException {
+
+        String cleanName = systemName.toLowerCase().trim();
+
+        int dotIndex = cleanName.lastIndexOf(".");
+        String friendlyName;
+        String targetFormat;
+
+        if (dotIndex >0){
+            friendlyName = cleanName.substring( 0,dotIndex);
+            targetFormat = cleanName.substring(dotIndex);
+        } else if (dotIndex == 0) {
+            friendlyName = UUID.randomUUID().toString().substring(0, 8);
+            targetFormat = cleanName.substring(dotIndex);
+        } else {
+            friendlyName = cleanName;
+            targetFormat = ".jpg";
+        }
+        return String.format("%s_w%d_h%d%s", friendlyName, targetW, targetH, targetFormat);
+
     }
 }
