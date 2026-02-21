@@ -14,10 +14,12 @@ public class ResizeProcessor implements  ImageProcessor   {
 
     @Override
     public BufferedImage process(BufferedImage  input, int targetW, int targetH) throws IOException {
+        int type = input.getTransparency() == Transparency.OPAQUE ?
+                BufferedImage.TYPE_INT_RGB : BufferedImage.TYPE_INT_ARGB;
         return Thumbnails.of(input)
                 .size(targetW, targetH)
                 .outputQuality(1.0f)
-                .imageType(BufferedImage.TYPE_INT_RGB)
+                .imageType(type)
                 .asBufferedImage();
     }
 

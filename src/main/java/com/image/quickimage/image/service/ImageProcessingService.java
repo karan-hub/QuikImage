@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Iterator;
 
+
 @Service
 @ConfigurationProperties(prefix = "app.storage")
 public class ImageProcessingService {
@@ -188,4 +189,4 @@ public class ImageProcessingService {
         return baos.toByteArray();
     }
 
- }
+}

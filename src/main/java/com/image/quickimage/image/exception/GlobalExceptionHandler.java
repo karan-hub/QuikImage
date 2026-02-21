@@ -29,7 +29,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ImageNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleImageNotFound(ImageNotFoundException e, HttpServletRequest request) {
-        return buildErrorResponse(HttpStatus.NOT_FOUND, e.getMessage(), request);
+        return buildErrorResponse(HttpStatus.NOT_FOUND, e.getMessage(), request );
     }
 
     @ExceptionHandler({InvalidDimensionException.class, DuplicateNameException.class})

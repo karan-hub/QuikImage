@@ -5,6 +5,9 @@ spring:
   application:
     name: quickimageDEV
 
+  cache:
+    type: redis
+    cache-names: rate-limit-buckets
   # --- ADD THIS SECTION ---
   data:
     redis:
@@ -39,3 +42,17 @@ app:
     max-quality: 0.9
     min-quality: 0.2
     default-quality: 0.75
+
+bucket4j:
+  enabled: true
+  filters:
+    - cache-name: rate-limit-buckets
+      url: /api/v1/image/.* # Protects your image endpoints
+      strategy: first
+      http-response-body: "{ \"error\": \"Too many requests. Please slow down!\" }"
+      rate-limits:
+        - bandwidths:
+            - capacity: 10
+              time: 1
+              unit: minutes
+              refill-speed: interval # 10 new tokens every minute

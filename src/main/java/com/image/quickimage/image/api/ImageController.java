@@ -8,8 +8,12 @@ import com.image.quickimage.image.infrastructure.StorageService;
 import com.image.quickimage.image.model.ImageEntity;
 import com.image.quickimage.image.repository.ImageRepository;
 import com.image.quickimage.image.service.ImageProcessingService;
+import com.image.quickimage.image.service.RateLimiterService;
+import io.github.bucket4j.Bucket;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +30,7 @@ public class ImageController {
     private StorageService storageService;
     private ImageRepository repository;
     private ImageProcessingService processingService;
+    private RateLimiterService rateLimiterService;
 
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -56,9 +61,9 @@ public class ImageController {
     public ResponseEntity<byte[]> getImage(
             @PathVariable String name,
             @PathVariable String extension,
-            @RequestParam(defaultValue = "500") int w,
-            @RequestParam(defaultValue = "500") int h,
-            @RequestParam(defaultValue = "80") int q,
+            @RequestParam(defaultValue = "500") Integer w,
+            @RequestParam(defaultValue = "500") Integer h,
+            @RequestParam(defaultValue = "80") Integer q,
             @RequestHeader(value = "Accept" , required = false) String acceptHeader
             ) throws Exception {
 
@@ -72,6 +77,12 @@ public class ImageController {
                 .header(HttpHeaders.CACHE_CONTROL, "public, max-age=31536000")
                 .header(HttpHeaders.VARY , HttpHeaders.ACCEPT)
                 .body(response.data());
+    }
+
+
+    @GetMapping("/test")
+    public ResponseEntity<String> test() {
+        return ResponseEntity.ok("This is now protected automatically!");
     }
 
 
