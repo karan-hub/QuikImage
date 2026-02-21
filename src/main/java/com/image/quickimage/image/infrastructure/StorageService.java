@@ -30,22 +30,22 @@ import java.util.UUID;
 public class StorageService {
     private ImageRepository imageRepository;
     private StorageProperties storageProperties;
-    private  final ImageNamingService namingService;
+    private final ImageNamingService namingService;
 
-// Path Handling
+    // Path Handling
 
-    public  Path getTargetPath(String filename , String location) throws FileNotFoundException {
-        try{
+    public Path getTargetPath(String filename, String location) throws FileNotFoundException {
+        try {
             Path path = Paths.get(location);
             Files.createDirectories(path);
-             return path.resolve(filename);
+            return path.resolve(filename);
 
-        }catch (Exception e){
-            throw  new FileNotFoundException("File not Found");
+        } catch (Exception e) {
+            throw new FileNotFoundException("File not Found");
         }
     }
 
-//    read(String filename)
+    // read(String filename)
     public String saveOriginal(FileUploadRequest request) {
         MultipartFile image = request.image();
         String contentType = image.getContentType();
@@ -54,15 +54,12 @@ public class StorageService {
             throw new UnsupportedMediaException("Only image files are allowed");
         }
 
-
         String finalFriendlyName = namingService.generateUniqueFriendlyName(
                 (request.name() != null && !request.name().isBlank())
                         ? request.name()
-                        : image.getOriginalFilename()
-        );
+                        : image.getOriginalFilename());
 
         String systemFileName = namingService.generateInternalSystemName(image.getOriginalFilename());
-
 
         String originalLocation = storageProperties.getOriginalLocation();
         Path uploadDir = Paths.get(originalLocation);
@@ -77,23 +74,21 @@ public class StorageService {
             throw new RuntimeException("Failed to store file on disk", e);
         }
 
-
         ImageEntity imageEntity = new ImageEntity();
         imageEntity.setName(finalFriendlyName);
         imageEntity.setSystemName(systemFileName);
         imageEntity.setContentType(contentType);
         imageRepository.save(imageEntity);
 
-        return "Image uploaded successfully. Friendly URL name: " + finalFriendlyName;
+        return finalFriendlyName;
     }
 
-
-    public  boolean exists(String filename , Path targetPath) {
-        if (Files.exists(targetPath)){
+    public boolean exists(String filename, Path targetPath) {
+        if (Files.exists(targetPath)) {
             System.out.println("Cache Hit! ");
-            return  true;
-        }else {
-            return  false;
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -108,11 +103,13 @@ public class StorageService {
         return new UrlResource(path.toUri());
     }
 
-    public MediaType getImageContentType(String filename){
+    public MediaType getImageContentType(String filename) {
 
         String lowerName = filename.toLowerCase();
-        if (lowerName.endsWith(".png")) return MediaType.IMAGE_PNG;
-        if (lowerName.endsWith(".gif")) return MediaType.IMAGE_GIF;
+        if (lowerName.endsWith(".png"))
+            return MediaType.IMAGE_PNG;
+        if (lowerName.endsWith(".gif"))
+            return MediaType.IMAGE_GIF;
         return MediaType.IMAGE_JPEG;
 
     }

@@ -18,7 +18,7 @@ public ImageResponse read(Path path) throws IOException {
 
     String contentType = "image/" + extension.toLowerCase();
 
-    return new ImageResponse(allBytes, contentType, fileName);
+    return new ImageResponse(allBytes, contentType, fileName , null);
 }
 
         public  boolean exists(String filename , Path targetPath) {

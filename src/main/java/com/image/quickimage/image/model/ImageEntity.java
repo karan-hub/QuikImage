@@ -20,4 +20,11 @@ public class ImageEntity {
     private  String systemName;
     private  String contentType;
 
+    private String primaryColor;   // Hex code (e.g., #f3a211)
+    private String secondaryColor;
+
+    private int focusX;
+    private int focusY;
+    
+
 }
