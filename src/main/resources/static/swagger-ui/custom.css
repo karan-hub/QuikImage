@@ -1,0 +1,31 @@
+/* Change the Topbar Color */
+.swagger-ui .topbar {
+    background-color: #0f172a !important; /* Deep Navy */
+    border-bottom: 2px solid #6366f1; /* Indigo accent */
+}
+
+/* Replace the Logo (Optional: Put your logo URL here) */
+.swagger-ui .topbar-wrapper img {
+    content: url('https://your-custom-logo-url.png');
+    width: 40px;
+}
+
+/* Modernize Buttons */
+.swagger-ui .btn.execute {
+    background-color: #6366f1 !important;
+    color: white !important;
+    border: none;
+    border-radius: 8px;
+}
+
+/* Style the Request/Response panels */
+.swagger-ui .opblock-get {
+    background: rgba(99, 102, 241, 0.05) !important;
+    border-color: #6366f1 !important;
+}
+
+/* Dark mode-ish feel for the headers */
+.swagger-ui .info .title {
+    font-family: 'Inter', sans-serif;
+    color: #1e293b;
+}

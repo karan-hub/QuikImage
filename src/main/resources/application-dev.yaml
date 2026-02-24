@@ -57,3 +57,21 @@ bucket4j:
               time: 1
               unit: minutes
               refill-speed: interval # 10 new tokens every minute
+
+
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+#    custom-css: /swagger-ui/custom.css
+
+    display-request-duration: true
+
+    doc-expansion: list
+
+    operations-sorter: method
+
+    default-models-expand-depth: -1
+
+    try-it-out-enabled: true
